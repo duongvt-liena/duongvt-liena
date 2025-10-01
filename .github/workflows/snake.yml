@@ -1,30 +1,42 @@
 name: Generate Snake
 
 on:
-    schedule:
-        - cron: "0 0,6,12 * * *"
-    workflow_dispatch:
+  # chạy tự động mỗi 24 giờ
+  schedule:
+    - cron: "0 */24 * * *"
+
+  # cho phép chạy thủ công bất cứ lúc nào
+  workflow_dispatch:
+
+  # chạy khi có push lên nhánh main
+  push:
+    branches:
+      - main
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  generate:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2.3.4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: generate github-contribution-grid-snake.svg
-              uses: Platane/snk/svg-only@v3
-              with:
-                  github_user_name: ${{ github.repository_owner }}
-                  outputs: |
-                      assets/github-contribution-grid-snake.svg
-                      assets/github-contribution-grid-snake-dark.svg?palette=github-dark
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # tạo file snake trong thư mục dist
+      - name: Generate github-contribution-grid-snake.svg
+        uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/github-contribution-grid-snake.svg
+            dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
-            - name: Push to GitHub
-              uses: EndBug/add-and-commit@v7.2.1
-              with:
-                  branch: main
-                  message: "Generate Contribution Snake"
+      # commit trực tiếp file trong dist/
+      - name: Commit and push files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update snake animation"
+          file_pattern: "dist/*.svg"
+          branch: main
